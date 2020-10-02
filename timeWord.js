@@ -1,3 +1,4 @@
+
 const minuteValues = [
     "o'clock",
     "oh one",
@@ -97,7 +98,7 @@ function mapTimes(startNum, endNum, times) {
     return timeArray;
 }
 
-function timeWord(time) {
+const timeWord = function (time) {
     const hourValStrings = hourValues;
     const minuteValStrings = minuteValues;
     const minHourArray = time.split(":")
@@ -123,3 +124,5 @@ function timeWord(time) {
 }
 
 // timeWord("01:00");
+
+module.exports = timeWord;
