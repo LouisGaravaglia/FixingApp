@@ -63,7 +63,10 @@ router.get('/:username', authUser, requireLogin, async function(
  *
  */
 
-router.patch('/:username', authUser, requireLogin, requireAdmin, async function(
+// FIXES BUG #4 (requireAdmin() functionw as being used as middleware, but being an admin is not required so long
+// as the user's username matches the request parameter. Only needed to remove the middleware since logic to confirm this
+// was already in place )
+router.patch('/:username', authUser, requireLogin, async function(
   req,
   res,
   next
@@ -76,6 +79,13 @@ router.patch('/:username', authUser, requireLogin, requireAdmin, async function(
     // get fields to change; remove token so we don't try to change it
     let fields = { ...req.body };
     delete fields._token;
+    // FIXES BUG #5 (Prevents users from changing the admin status in a patch request.)
+    if (fields.admin ) throw new ExpressError('Users are not allowed to change admin status.', 401);
+    // FIXES BUG #6 (Prevents users from submittin invalid properties to the pathc request.)
+    if (!fields.first_name && !fields.last_name && !fields.phone && !fields.email && Object.keys(fields).length > 0) throw new ExpressError('Users are only allowed to change the following properties: first_name, last_name, phone, email.', 401);
+    // FIXES BUG #7 (Prevents users from only submittin JWT in a patch request.)
+    if (Object.keys(fields).length === 0 ) throw new ExpressError('No properties submitted for patching.', 401);
+    
 
     let user = await User.update(req.params.username, fields);
     return res.json({ user });

@@ -202,11 +202,49 @@ describe("PATCH /users/[username]", function() {
     });
   });
 
-  test("should disallowing patching not-allowed-fields", async function() {
+  // TESTS BUG #4
+  test("should patch data if same user, but not admin", async function() {
+    const response = await request(app)
+      .patch("/users/u2")
+      .send({ _token: tokens.u2, first_name: "new-fn2" }); // u2 is not a admin
+    // Should allow patch to go through even if not an admin, but is the same user as the user being patched.
+    expect(response.statusCode).toBe(200);
+    expect(response.body.user).toEqual({
+      username: "u2",
+      first_name: "new-fn2",
+      last_name: "ln2",
+      email: "email2",
+      phone: "phone2",
+      admin: false,
+      password: expect.any(String)
+    });
+  });
+
+  // TESTS BUG #5
+  test("should disallowing patching the admin status", async function() {
     const response = await request(app)
       .patch("/users/u1")
       .send({ _token: tokens.u1, admin: true });
     expect(response.statusCode).toBe(401);
+    expect(response.body.message).toEqual("Users are not allowed to change admin status.");
+  });
+
+  // TESTS BUG #6
+  test("should disallowing patching any properties other than: first_name, last_name, phone, email", async function() {
+    const response = await request(app)
+      .patch("/users/u1")
+      .send({ _token: tokens.u1, "fakeProperty": "fakeValue" });
+    expect(response.statusCode).toBe(401);
+    expect(response.body.message).toEqual('Users are only allowed to change the following properties: first_name, last_name, phone, email.');
+  });
+
+  // TESTS BUG #7
+  test("should disallowing patching if user submits only the JWT to the PATCH route.", async function() {
+    const response = await request(app)
+      .patch("/users/u1")
+      .send({ _token: tokens.u1 });
+    expect(response.statusCode).toBe(401);
+    expect(response.body.message).toEqual('No properties submitted for patching.');
   });
 
   test("should return 404 if cannot find", async function() {

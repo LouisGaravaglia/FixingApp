@@ -32,4 +32,5 @@ app.use(function(err, req, res, next) {
   });
 });
 
+// FIXES BUG #8 (Removed the duplicated line "module.exports = app")
 module.exports = app;
