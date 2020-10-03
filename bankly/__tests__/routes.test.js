@@ -37,6 +37,7 @@ beforeEach(async function() {
 });
 
 describe("POST /auth/register", function() {
+
   test("should allow a user to register in", async function() {
     const response = await request(app)
       .post("/auth/register")
@@ -54,6 +55,25 @@ describe("POST /auth/register", function() {
     let { username, admin } = jwt.verify(response.body.token, SECRET_KEY);
     expect(username).toBe("new_user");
     expect(admin).toBe(false);
+  });
+
+  // TESTS BUG #1 
+  test("Does not properly validate a user registering without all required properties", async function() {
+    const response = await request(app)
+      .post("/auth/register")
+      .send({
+        username: "new_user2",
+        password: "new_password2",
+        first_name: "new_first2"
+      });
+    // Should respond with status code of 400 and a custom message about which properties are required 
+    // (instead of 500 and a message regarding violating not null constraint).
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toEqual([
+      'instance requires property "last_name"',
+      'instance requires property "email"',
+      'instance requires property "phone"'
+    ]);
   });
 
   test("should not allow a user to register with an existing username", async function() {
@@ -90,6 +110,19 @@ describe("POST /auth/login", function() {
     expect(username).toBe("u1");
     expect(admin).toBe(false);
   });
+  // TESTS BUG #2 
+  test("should respond with an error message if username or password is incorrect", async function() {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        username: "u1",
+        password: "notapassword"
+      });
+    // Should respond with status code of 401 and a custom message about Invalid Username/Password 
+    // (instead of 200 and automatically returing a JWT).
+    expect(response.statusCode).toBe(401);
+    expect(response.body.message).toEqual('Invalid Username/Password');
+  });
 });
 
 describe("GET /users", function() {
@@ -106,6 +139,8 @@ describe("GET /users", function() {
     expect(response.body.users.length).toBe(3);
   });
 });
+
+
 
 describe("GET /users/[username]", function() {
   test("should deny access if no token provided", async function() {

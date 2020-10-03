@@ -8,7 +8,8 @@ class User {
 
 /** Register user with data. Returns new user data. */
 
-  static async register({username, password, first_name, last_name, email, phone}) {
+  static async register(data) {
+    const { username, password, first_name, last_name, email, phone } = data;
     const duplicateCheck = await db.query(
       `SELECT username 
         FROM users 
@@ -65,12 +66,13 @@ class User {
     );
 
     const user = result.rows[0];
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-      return user;
-    } else {
-      throw new ExpressError('Cannot authenticate', 401);
-    }
+    if (user) {
+      const isValid = await bcrypt.compare(password, user.password);
+      if (isValid) {
+          return user;
+      }
+      }
+      throw new ExpressError("Invalid Username/Password", 401);
   }
 
   /** Returns list of user info:
