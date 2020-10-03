@@ -47,15 +47,23 @@ function requireAdmin(req, res, next) {
 
 function authUser(req, res, next) {
   try {
-    const token = req.body._token || req.query._token;
+    const tokenStr = req.body._token || req.query._token;
+    // FIXES BUG #3 (Verifying JWT to make sure the SECRET_KEY hasn't been changed and valid before proceeding)
+    let token = jwt.verify(tokenStr, SECRET_KEY);
     if (token) {
-      let payload = jwt.decode(token);
-      req.curr_username = payload.username;
-      req.curr_admin = payload.admin;
+      req.curr_username = token.username;
+      req.curr_admin = token.admin;
     }
+    // BUG CODE:
+    // const token = req.body._token || req.query._token;
+    // if (token) {
+    //   let payload = jwt.decode(token);
+    //   req.curr_username = payload.username;
+    //   req.curr_admin = payload.admin;
+    // }
     return next()
   } catch (err) {
-    return next(err);
+    return next(new ExpressError("You must authenticate first", 401));
   }
 } // end
 

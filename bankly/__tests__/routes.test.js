@@ -13,6 +13,7 @@ const { SECRET_KEY } = require("../config");
 
 // tokens for our sample users
 const tokens = {};
+const falseToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InBvb3AiLCJhZG1pbiI6ZmFsc2UsImlhdCI6MTYwMTc1NDM5MH0.u2S9eDcoOi5fUnZTJnDR4ql1vD_I6c4HjhiUrNWUC6B"
 
 /** before each test, insert u1, u2, and u3  [u3 is admin] */
 
@@ -137,6 +138,15 @@ describe("GET /users", function() {
       .send({ _token: tokens.u1 });
     expect(response.statusCode).toBe(200);
     expect(response.body.users.length).toBe(3);
+  });
+  // TESTS BUG #3
+  test("should respond with an error message if SECRET_KEY of JWT is invalid", async function() {
+    const response = await request(app)
+      .get("/users")
+      .send({ _token: falseToken });
+   // If the secret_key was changed in transit, it shouldn't allow you to proceed and send an error message
+    expect(response.statusCode).toBe(401);
+    expect(response.body.message).toEqual("You must authenticate first");
   });
 });
 
